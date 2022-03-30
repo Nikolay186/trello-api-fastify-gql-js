@@ -13,11 +13,11 @@ import { GenericError } from './errors/generic_error.js'
 
 async function checkAuth (currentUser) {
   if (!currentUser) {
-    throw new GenericError('Not authorized', 'UNAUTHORIZED')
+    return new GenericError('Not authorized', 'UNAUTHORIZED')
   }
   const userCheck = User.query().where('users.username', currentUser.username)
   if (!userCheck) {
-    throw new GenericError('Not authorized', 'UNAUTHORIZED')
+    return new GenericError('Not authorized', 'UNAUTHORIZED')
   }
 }
 
@@ -32,7 +32,8 @@ export const schema = new GraphQLSchema({
       // Users
       getUsers: {
         type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(UserType))),
-        resolve: async () => {
+        resolve: async (source, args, context) => {
+          checkAuth(context.user)
           let users = await User.query().execute()
           users.forEach(user => { delete user.password; delete user.token })
           return users
@@ -43,7 +44,8 @@ export const schema = new GraphQLSchema({
         args: {
           id: { type: new GraphQLNonNull(GraphQLInt) }
         },
-        resolve: async (source, args) => {
+        resolve: async (source, args, context) => {
+          checkAuth(context.user)
           let user = await User.query().where('users.id', args.id).first().execute()
           delete user.password
           delete user.token
@@ -53,7 +55,8 @@ export const schema = new GraphQLSchema({
       // Columns
       getColumns: {
         type: new GraphQLNonNull(new GraphQLList(ColumnType)),
-        resolve: async () => {
+        resolve: async (source, args, context) => {
+          checkAuth(context.user)
           return Column.query().execute()
         }
       },
@@ -62,14 +65,16 @@ export const schema = new GraphQLSchema({
         args: {
           id: { type: new GraphQLNonNull(GraphQLInt) }
         },
-        resolve: async (source, args) => {
+        resolve: async (source, args, context) => {
+          checkAuth(context.user)
           return Column.query().where('columns.id', args.id).first().execute()
         }
       },
       // Cards
       getCards: {
         type: new GraphQLNonNull(new GraphQLList(CardType)),
-        resolve: async () => {
+        resolve: async (source, args, context) => {
+          checkAuth(context.user)
           return Card.query().execute()
         }
       },
@@ -78,14 +83,16 @@ export const schema = new GraphQLSchema({
         args: {
           id: { type: new GraphQLNonNull(GraphQLInt) }
         },
-        resolve: async (source, args) => {
+        resolve: async (source, args, context) => {
+          checkAuth(context.user)
           return Card.query().where('cards.id', args.id).first().execute()
         }
       },
       // Comments
       getComments: {
         type: new GraphQLNonNull(new GraphQLList(CommentType)),
-        resolve: async () => {
+        resolve: async (source, args, context) => {
+          checkAuth(context.user)
           return Comment.query().execute()
         }
       },
@@ -94,7 +101,8 @@ export const schema = new GraphQLSchema({
         args: {
           id: { type: new GraphQLNonNull(GraphQLInt) }
         },
-        resolve: async (source, args) => {
+        resolve: async (source, args, context) => {
+          checkAuth(context.user)
           return Comment.query().where('comments.id', args.id).first().execute()
         }
       }
