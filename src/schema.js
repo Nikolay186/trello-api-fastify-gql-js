@@ -48,6 +48,7 @@ export const schema = new GraphQLSchema({
           const searchByUsername = conditions.username !== undefined
           const searchByPartialUsername = conditions.partUsername !== undefined
           const searchByEmail = conditions.email !== undefined
+          const searchByPartialEmail = conditions.partEmail !== undefined
           let result = []
           let user
           if (!applyFilters) {
@@ -70,6 +71,10 @@ export const schema = new GraphQLSchema({
           }
           if (searchByEmail) {
             user = await User.query().where('users.email', conditions.email).first().execute()
+            result.push(user)
+          }
+          if (searchByPartialEmail) {
+            user = await User.query().where('users.email', 'like', '%' + conditions.partEmail + '%').execute()
             result.push(user)
           }
           result = result.flat()

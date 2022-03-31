@@ -17,7 +17,8 @@ export async function seed (knex) {
   for (let index = 0; index < 2000; index++) {
     const user = {
       username: faker.internet.userName(),
-      password: faker.internet.password(8)
+      password: faker.internet.password(8),
+      email: faker.internet.email()
     }
     await User.query().insert({...user}).execute()
 
