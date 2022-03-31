@@ -8,6 +8,6 @@ export const CommentFilter = new GraphQLInputObjectType({
     title: { type: GraphQLString },
     partContent: { type: GraphQLString },
     ownerId: { type: GraphQLInt },
-    cardId: { type: GraphQLInt },
-  },
+    cardId: { type: GraphQLInt }
+  }
 })

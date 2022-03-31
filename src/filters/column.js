@@ -7,6 +7,6 @@ export const ColumnFilter = new GraphQLInputObjectType({
     ids: { type: new GraphQLList(new GraphQLNonNull(GraphQLInt)) },
     title: { type: GraphQLString },
     partTitle: { type: GraphQLString },
-    ownerId: { type: GraphQLInt },
-  },
+    ownerId: { type: GraphQLInt }
+  }
 })

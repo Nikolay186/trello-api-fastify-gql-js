@@ -15,16 +15,6 @@ import { ColumnFilter } from './filters/column.js'
 import { CardFilter } from './filters/card.js'
 import { CommentFilter } from './filters/comment.js'
 
-async function checkAuth (currentUser) {
-  if (!currentUser) {
-    return new GenericError('Not authorized', 'UNAUTHORIZED')
-  }
-  const userCheck = User.query().where('users.username', currentUser.username)
-  if (!userCheck) {
-    return new GenericError('Not authorized', 'UNAUTHORIZED')
-  }
-}
-
 async function checkOwnership (entity, user) {
   if (entity.ownerId === user.id) { return true } else { return false }
 }
@@ -40,7 +30,6 @@ export const schema = new GraphQLSchema({
           filters: { type: UserFilter }
         },
         resolve: async (source, args, context) => {
-          checkAuth(context.user)
           const conditions = args.filters
           const applyFilters = conditions !== undefined
           const searchById = conditions.id !== undefined
@@ -86,10 +75,9 @@ export const schema = new GraphQLSchema({
       searchColumns: {
         type: new GraphQLList(new GraphQLNonNull(ColumnType)),
         args: {
-          filters: { type: ColumnFilter },
+          filters: { type: ColumnFilter }
         },
         resolve: async (source, args, context) => {
-          checkAuth(context.user)
           const conditions = args.filters
           const applyFilters = conditions !== undefined
           const searchById = conditions.id !== undefined
@@ -100,7 +88,7 @@ export const schema = new GraphQLSchema({
           let result = []
           let column
           if (!applyFilters) {
-            return await Column.query().execute()
+            return Column.query().execute()
           }
           if (searchById) {
             column = await Column.query().findById(conditions.id).execute()
@@ -129,10 +117,9 @@ export const schema = new GraphQLSchema({
       searchCards: {
         type: new GraphQLList(new GraphQLNonNull(CardType)),
         args: {
-          filters: { type: CardFilter },
+          filters: { type: CardFilter }
         },
         resolve: async (source, args, context) => {
-          checkAuth(context.user)
           const conditions = args.filters
           const applyFilters = conditions !== undefined
           const searchById = conditions.id !== undefined
@@ -144,7 +131,7 @@ export const schema = new GraphQLSchema({
           let result = []
           let card
           if (!applyFilters) {
-            return await Card.query().execute()
+            return Card.query().execute()
           }
           if (searchById) {
             card = await Card.query().findById(conditions.id).execute()
@@ -171,16 +158,15 @@ export const schema = new GraphQLSchema({
           }
           result = result.flat()
           return result
-        },
+        }
       },
       // Comments
       searchComments: {
         type: new GraphQLList(new GraphQLNonNull(CommentType)),
         args: {
-          filters: { type: CommentFilter },
+          filters: { type: CommentFilter }
         },
         resolve: async (source, args, context) => {
-          checkAuth(context.user)
           const conditions = args.filters
           const applyFilters = conditions !== undefined
           const searchById = conditions.id !== undefined
@@ -192,11 +178,11 @@ export const schema = new GraphQLSchema({
           let result = []
           let comment
           if (!applyFilters) {
-            return await Comment.query().execute()
+            return Comment.query().execute()
           }
           if (searchById) {
             comment = await Comment.query().findById(conditions.id).execute()
-            result.push(card)
+            result.push(comment)
           } else if (searchByIds) {
             comment = await Comment.query().findByIds(conditions.ids).execute()
             result.push(comment)
@@ -219,8 +205,8 @@ export const schema = new GraphQLSchema({
           }
           result = result.flat()
           return result
-        },
-      },
+        }
+      }
     }
   }),
   mutation: new GraphQLObjectType({
@@ -255,7 +241,6 @@ export const schema = new GraphQLSchema({
           input: { type: new GraphQLNonNull(UpdateUserInput) }
         },
         resolve: async (root, args, context) => {
-          await checkAuth(context.user)
           if (!await bcrypt.compare(args.pwd, context.user.password)) {
             throw new GenericError('Wrong password', 'FORBIDDEN')
           }
@@ -269,7 +254,7 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-          await checkAuth(user)
+
           if (!await bcrypt.compare(args.pwd, user.password)) {
             throw new GenericError('Wrong password', 'FORBIDDEN')
           }
@@ -285,7 +270,7 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-          await checkAuth(user)
+
           args.input.ownerId = user.id
           return Column.query().insert(args.input).returning('*').execute()
         }
@@ -298,7 +283,7 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-          await checkAuth(user)
+
           if (await checkOwnership(await Column.query().where('columns.ownerId', user.id).where('columns.id', args.id).execute(), user)) {
             return Column.query().patch(args.input).where('columns.id', args.id).returning('*').first().execute()
           } else {
@@ -313,7 +298,7 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-          await checkAuth(user)
+
           if (await Column.query().where('columns.ownerId', user.id).where('columns.id', args.id).execute()) {
             return Column.query().delete().where('columns.id', args.id).returning('*').execute()
           } else {
@@ -329,7 +314,7 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-          await checkAuth(user)
+
           args.input.ownerId = user.id
           return Card.query().insert(args.input).returning('*').execute()
         }
@@ -342,7 +327,7 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-          await checkAuth(context.user)
+
           if (checkOwnership(await Card.query().where('cards.id', args.id).where('cards.ownerId', user.id).execute())) {
             return Card.query().patch(args.input).where('cards.id', args.id).returning('*').first().execute()
           } else {
@@ -357,7 +342,7 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-          await checkAuth(context.user)
+
           if (checkOwnership(await Card.query().where('cards.id', args.id).where('cards.ownerId', user.id).execute())) {
             return Card.query().delete().where('cards.id', args.id).returning('*').execute()
           } else {
@@ -373,7 +358,7 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-          await checkAuth(user)
+
           args.input.ownerId = user.id
           return Comment.query().insert(args.input).returning('*').execute()
         }
@@ -386,7 +371,7 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-          await checkAuth(context.user)
+
           if (checkOwnership(Comment.query().where('comments.id', args.id).where('comments.ownerId', user.id).execute())) {
             return Comment.query().patch(args.input).where('comments.id', args.id).returning('*').first().execute()
           } else {
@@ -401,7 +386,7 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-          await checkAuth(user)
+
           if (checkOwnership(Comment.query().where('comments.id', args.id).where('comments.ownerId', user.id).execute())) {
             return Comment.query().delete().where('comments.id', args.id).returning('*').execute()
           } else {

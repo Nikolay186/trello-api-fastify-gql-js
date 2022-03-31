@@ -8,6 +8,6 @@ export const CardFilter = new GraphQLInputObjectType({
     title: { type: GraphQLString },
     partTitle: { type: GraphQLString },
     columnId: { type: GraphQLInt },
-    ownerId: { type: GraphQLInt },
-  },
+    ownerId: { type: GraphQLInt }
+  }
 })

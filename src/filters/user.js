@@ -8,6 +8,6 @@ export const UserFilter = new GraphQLInputObjectType({
     username: { type: GraphQLString },
     email: { type: GraphQLString },
     partUsername: { type: GraphQLString },
-    partEmail: { type: GraphQLString },
-  },
+    partEmail: { type: GraphQLString }
+  }
 })
