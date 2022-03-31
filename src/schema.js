@@ -10,6 +10,10 @@ import { CreateUserInput, UpdateUserInput, UserType } from '/Users/Nikolaj/proje
 import * as bcrypt from 'bcrypt'
 import { MessageType } from './types/message.js'
 import { GenericError } from './errors/generic_error.js'
+import { UserFilter } from './filters/user.js'
+import { ColumnFilter } from './filters/column.js'
+import { CardFilter } from './filters/card.js'
+import { CommentFilter } from './filters/comment.js'
 
 async function checkAuth (currentUser) {
   if (!currentUser) {
@@ -30,82 +34,188 @@ export const schema = new GraphQLSchema({
     name: 'Query',
     fields: {
       // Users
-      getUsers: {
-        type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(UserType))),
-        resolve: async (source, args, context) => {
-          checkAuth(context.user)
-          let users = await User.query().execute()
-          users.forEach(user => { delete user.password; delete user.token })
-          return users
-        }
-      },
-      getUser: {
-        type: UserType,
+      searchUsers: {
+        type: new GraphQLList(new GraphQLNonNull(UserType)),
         args: {
-          id: { type: new GraphQLNonNull(GraphQLInt) }
+          filters: { type: UserFilter }
         },
         resolve: async (source, args, context) => {
           checkAuth(context.user)
-          let user = await User.query().where('users.id', args.id).first().execute()
-          delete user.password
-          delete user.token
-          return user
+          const conditions = args.filters
+          const applyFilters = conditions !== undefined
+          const searchById = conditions.id !== undefined
+          const searchByIds = conditions.ids !== undefined
+          const searchByUsername = conditions.username !== undefined
+          const searchByPartialUsername = conditions.partUsername !== undefined
+          const searchByEmail = conditions.email !== undefined
+          let result = []
+          let user
+          if (!applyFilters) {
+            return User.query().execute()
+          }
+          if (searchById) {
+            user = await User.query().findById(conditions.id).first().execute()
+            result.push(user)
+          } else if (searchByIds) {
+            user = await User.query().findByIds(conditions.ids).execute()
+            result.push(user)
+          }
+          if (searchByUsername) {
+            user = await User.query().where('users.username', conditions.username).first().execute()
+            result.push(user)
+          }
+          if (searchByPartialUsername) {
+            user = await User.query().where('users.username', 'like', '%' + conditions.partUsername + '%').execute()
+            result.push(user)
+          }
+          if (searchByEmail) {
+            user = await User.query().where('users.email', conditions.email).first().execute()
+            result.push(user)
+          }
+          result = result.flat()
+          result.map((user) => { delete user.password; delete user.token })
+          return result
         }
       },
       // Columns
-      getColumns: {
-        type: new GraphQLNonNull(new GraphQLList(ColumnType)),
-        resolve: async (source, args, context) => {
-          checkAuth(context.user)
-          return Column.query().execute()
-        }
-      },
-      getColumn: {
-        type: ColumnType,
+      searchColumns: {
+        type: new GraphQLList(new GraphQLNonNull(ColumnType)),
         args: {
-          id: { type: new GraphQLNonNull(GraphQLInt) }
+          filters: { type: ColumnFilter },
         },
         resolve: async (source, args, context) => {
           checkAuth(context.user)
-          return Column.query().where('columns.id', args.id).first().execute()
+          const conditions = args.filters
+          const applyFilters = conditions !== undefined
+          const searchById = conditions.id !== undefined
+          const searchByIds = conditions.ids !== undefined
+          const searchByTitle = conditions.title !== undefined
+          const searchByPartialTitle = conditions.partTitle !== undefined
+          const searchByOwner = conditions.ownerId !== undefined
+          let result = []
+          let column
+          if (!applyFilters) {
+            return await Column.query().execute()
+          }
+          if (searchById) {
+            column = await Column.query().findById(conditions.id).execute()
+            result.push(column)
+          } else if (searchByIds) {
+            column = await Column.query().findByIds(conditions.ids).execute()
+            result.push(column)
+          }
+          if (searchByTitle) {
+            column = await Column.query().where('columns.title', conditions.title).execute()
+            result.push(column)
+          }
+          if (searchByPartialTitle) {
+            column = await Column.query().where('columns.title', 'like', '%' + conditions.partTitle + '%').execute()
+            result.push(column)
+          }
+          if (searchByOwner) {
+            column = await Column.query().where('columns.ownerId', conditions.ownerId).execute()
+            result.push(column)
+          }
+          result = result.flat()
+          return result
         }
       },
       // Cards
-      getCards: {
-        type: new GraphQLNonNull(new GraphQLList(CardType)),
-        resolve: async (source, args, context) => {
-          checkAuth(context.user)
-          return Card.query().execute()
-        }
-      },
-      getCard: {
-        type: CardType,
+      searchCards: {
+        type: new GraphQLList(new GraphQLNonNull(CardType)),
         args: {
-          id: { type: new GraphQLNonNull(GraphQLInt) }
+          filters: { type: CardFilter },
         },
         resolve: async (source, args, context) => {
           checkAuth(context.user)
-          return Card.query().where('cards.id', args.id).first().execute()
-        }
+          const conditions = args.filters
+          const applyFilters = conditions !== undefined
+          const searchById = conditions.id !== undefined
+          const searchByIds = conditions.ids !== undefined
+          const searchByTitle = conditions.title !== undefined
+          const searchByPartialTitle = conditions.partTitle !== undefined
+          const searchByOwner = conditions.ownerId !== undefined
+          const searchByColumn = conditions.columnId !== undefined
+          let result = []
+          let card
+          if (!applyFilters) {
+            return await Card.query().execute()
+          }
+          if (searchById) {
+            card = await Card.query().findById(conditions.id).execute()
+            result.push(card)
+          } else if (searchByIds) {
+            card = await Card.query().findByIds(conditions.ids).execute()
+            result.push(card)
+          }
+          if (searchByTitle) {
+            card = await Card.query().where('cards.title', conditions.title).execute()
+            result.push(card)
+          }
+          if (searchByPartialTitle) {
+            card = await Card.query().where('cards.title', 'like', '%' + conditions.partTitle + '%').execute()
+            result.push(card)
+          }
+          if (searchByOwner) {
+            card = await Card.query().where('cards.ownerId', conditions.ownerId).execute()
+            result.push(card)
+          }
+          if (searchByColumn) {
+            card = await Card.query().where('cards.columnId', conditions.columnId).execute()
+            result.push(card)
+          }
+          result = result.flat()
+          return result
+        },
       },
       // Comments
-      getComments: {
-        type: new GraphQLNonNull(new GraphQLList(CommentType)),
-        resolve: async (source, args, context) => {
-          checkAuth(context.user)
-          return Comment.query().execute()
-        }
-      },
-      getComment: {
-        type: CommentType,
+      searchComments: {
+        type: new GraphQLList(new GraphQLNonNull(CommentType)),
         args: {
-          id: { type: new GraphQLNonNull(GraphQLInt) }
+          filters: { type: CommentFilter },
         },
         resolve: async (source, args, context) => {
           checkAuth(context.user)
-          return Comment.query().where('comments.id', args.id).first().execute()
-        }
-      }
+          const conditions = args.filters
+          const applyFilters = conditions !== undefined
+          const searchById = conditions.id !== undefined
+          const searchByIds = conditions.ids !== undefined
+          const searchByContent = conditions.content !== undefined
+          const searchByPartialContent = conditions.partContent !== undefined
+          const searchByOwner = conditions.ownerId !== undefined
+          const searchByCard = conditions.cardId !== undefined
+          let result = []
+          let comment
+          if (!applyFilters) {
+            return await Comment.query().execute()
+          }
+          if (searchById) {
+            comment = await Comment.query().findById(conditions.id).execute()
+            result.push(card)
+          } else if (searchByIds) {
+            comment = await Comment.query().findByIds(conditions.ids).execute()
+            result.push(comment)
+          }
+          if (searchByContent) {
+            comment = await Comment.query().where('comments.content', conditions.content).execute()
+            result.push(comment)
+          }
+          if (searchByPartialContent) {
+            comment = await Comment.query().where('comments.content', 'like', '%' + conditions.partContent + '%').execute()
+            result.push(comment)
+          }
+          if (searchByOwner) {
+            comment = await Card.query().where('comments.ownerId', conditions.ownerId).execute()
+            result.push(comment)
+          }
+          if (searchByCard) {
+            comment = await Card.query().where('comments.cardId', conditions.cardId).execute()
+            result.push(comment)
+          }
+          result = result.flat()
+          return result
+        },
+      },
     }
   }),
   mutation: new GraphQLObjectType({

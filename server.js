@@ -23,7 +23,7 @@ app.register(mercurius, {
         type: 'NOT_FOUND',
         data: { }
       })
-    } else { return user }
+    } else { return {user: user} }
   }
 })
 
