@@ -1,6 +1,6 @@
 import { Model } from 'objection'
-import { Card } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/card.js'
-import { User } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/user.js'
+import { Card } from './card.js'
+import { User } from './user.js'
 
 export class Comment extends Model {
   static get tableName () {

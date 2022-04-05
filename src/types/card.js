@@ -1,6 +1,6 @@
 import { GraphQLInt, GraphQLNonNull, GraphQLObjectType, GraphQLString, GraphQLInputObjectType, GraphQLList } from 'graphql'
-import { UserType } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/types/user.js'
-import { ColumnType } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/types/column.js'
+import { UserType } from './user.js'
+import { ColumnType } from './column.js'
 import { CommentType } from './comment.js'
 import { getUserLoader } from '../dataloaders/userLoader.js'
 import { getColumnLoader } from '../dataloaders/columnLoader.js'
@@ -18,8 +18,6 @@ export const CardType = new GraphQLObjectType({
       resolve: async (source) => {
         const loader = getUserLoader(source)
         return loader.load(source.ownerId)
-        // return userLoader.load(source)
-        // return await User.query().where('users.id', source.ownerId).first().execute()
       }
     },
     column: {
@@ -27,8 +25,6 @@ export const CardType = new GraphQLObjectType({
       resolve: async (source) => {
         const loader = getColumnLoader(source)
         return loader.load(source.columnId)
-        // return columnLoader.load(source)
-        // return await Column.query().where('columns.id', source.columnId).first().execute()
       }
     },
     comments: {
@@ -36,8 +32,6 @@ export const CardType = new GraphQLObjectType({
       resolve: async (source) => {
         const loader = getCommentLoader(source)
         return loader.load(source.id)
-        // return commentLoader.load(source)
-        // return await Comment.query().where('comments.cardId', source.id).execute()
       }
     }
   })

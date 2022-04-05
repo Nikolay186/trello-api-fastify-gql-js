@@ -1,6 +1,6 @@
 import { GraphQLInputObjectType, GraphQLInt, GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLString } from 'graphql'
-import { CardType } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/types/card.js'
-import { UserType } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/types/user.js'
+import { CardType } from './card.js'
+import { UserType } from './user.js'
 import { getCardLoader } from '../dataloaders/cardLoader.js'
 import { getUserLoader } from '../dataloaders/userLoader.js'
 
@@ -15,18 +15,13 @@ export const ColumnType = new GraphQLObjectType({
       resolve: async (source) => {
         const loader = getCardLoader(source)
         return loader.load(source.id)
-        // return cardLoader.load(source)
-        // return await Card.query().where('cards.columnId', source.id).execute()
       }
     },
     owner: {
       type: new GraphQLNonNull(UserType),
       resolve: async (source) => {
         const loader = getUserLoader(source)
-        const user = await loader.load(source.ownerId)
         return loader.load(source.ownerId)
-        // return userLoader.load(source)
-        // return await User.query().where('users.id', source.ownerId).first().execute()
       }
     }
   })

@@ -21,7 +21,7 @@ export async function seed (knex) {
   await seedComments(knex)
 };
 
-async function seedUsers(knex) {
+async function seedUsers (knex) {
   Model.knex(knex)
   for (let index = 0; index < 2000; index++) {
     const user = {
@@ -33,7 +33,7 @@ async function seedUsers(knex) {
   }
 }
 
-async function seedColumns(knex) {
+async function seedColumns (knex) {
   Model.knex(knex)
   for (let index = 0; index < 2000; index++) {
     const column = {
@@ -44,7 +44,7 @@ async function seedColumns(knex) {
   }
 }
 
-async function seedCards(knex) {
+async function seedCards (knex) {
   Model.knex(knex)
   for (let index = 0; index < 2000; index++) {
     const card = {
@@ -56,7 +56,7 @@ async function seedCards(knex) {
   }
 }
 
-async function seedComments(knex) {
+async function seedComments (knex) {
   for (let index = 0; index < 2000; index++) {
     const comment = {
       content: faker.lorem.words(5),
@@ -67,9 +67,9 @@ async function seedComments(knex) {
   }
 }
 
-async function resetSequences(knex) {
+async function resetSequences (knex) {
   const sequences = (await knex.raw(`SELECT sequence_name FROM information_schema.sequences WHERE sequence_schema = 'public' AND sequence_name NOT LIKE '%migrations%';`)).rows
-  sequences.map(async(seq) => {
+  sequences.map(async (seq) => {
     await knex.raw(`ALTER SEQUENCE ${seq.sequence_name} RESTART;`)
-  });
+  })
 }

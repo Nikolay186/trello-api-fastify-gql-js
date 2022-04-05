@@ -1,9 +1,8 @@
 import { Model } from 'objection'
-import { Card } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/card.js'
-import { Column } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/column.js'
-import { Comment } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/comment.js'
+import { Card } from './card.js'
+import { Column } from './column.js'
+import { Comment } from './comment.js'
 import * as bcrypt from 'bcrypt'
-import { getToken } from '../auth/jwt.js'
 
 export class User extends Model {
   static get tableName () {
@@ -12,7 +11,6 @@ export class User extends Model {
 
   async $beforeInsert () {
     this.password = await bcrypt.hash(this.password, 10)
-    // this.token = getToken(this.username)
   }
 
   static get relationMappings () {

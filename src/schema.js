@@ -1,12 +1,12 @@
 import { GraphQLInt, GraphQLList, GraphQLNonNull, GraphQLObjectType, GraphQLSchema, GraphQLString } from 'graphql'
-import { User } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/user.js'
-import { Column } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/column.js'
-import { Card } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/card.js'
-import { Comment } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/comment.js'
-import { CardType, CreateCardInput, UpdateCardInput } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/types/card.js'
-import { ColumnType, CreateColumnInput, UpdateColumnInput } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/types/column.js'
-import { CommentType, CreateCommentInput, UpdateCommentInput } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/types/comment.js'
-import { CreateUserInput, UpdateUserInput, UserType } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/types/user.js'
+import { User } from './models/user.js'
+import { Column } from './models/column.js'
+import { Card } from './models/card.js'
+import { Comment } from './models/comment.js'
+import { CardType, CreateCardInput, UpdateCardInput } from './types/card.js'
+import { ColumnType, CreateColumnInput, UpdateColumnInput } from './types/column.js'
+import { CommentType, CreateCommentInput, UpdateCommentInput } from './types/comment.js'
+import { CreateUserInput, UpdateUserInput, UserType } from './types/user.js'
 import * as bcrypt from 'bcrypt'
 import { MessageType } from './types/message.js'
 import { GenericError } from './errors/generic_error.js'
@@ -16,11 +16,11 @@ import { CardFilter } from './filters/card.js'
 import { CommentFilter } from './filters/comment.js'
 import jwt from 'jsonwebtoken'
 
-async function checkOwnership(entity, user) {
+async function checkOwnership (entity, user) {
   if (entity.ownerId === user.id) { return true } else { return false }
 }
 
-async function checkAuth(request) {
+async function checkAuth (request) {
   return jwt.verify(request.headers.authorization, '123')
 }
 
@@ -33,7 +33,7 @@ export const schema = new GraphQLSchema({
         type: UserType,
         args: {
           username: { type: new GraphQLNonNull(GraphQLString) },
-          password: { type: new GraphQLNonNull(GraphQLString) },
+          password: { type: new GraphQLNonNull(GraphQLString) }
         },
         resolve: async (source, args, context) => {
           const user = await User.query().where('users.username', args.username).first().execute()
@@ -47,7 +47,7 @@ export const schema = new GraphQLSchema({
           } else {
             return new GenericError('Wrong password', 'UNAUTHORIZED')
           }
-        },
+        }
       },
       searchUsers: {
         type: new GraphQLList(new GraphQLNonNull(UserType)),
@@ -69,7 +69,7 @@ export const schema = new GraphQLSchema({
           const searchByPartialEmail = conditions.partEmail !== undefined
           let result = []
           let user
-          
+
           if (searchById) {
             user = await User.query().findById(conditions.id).first().execute()
             result.push(user)
@@ -301,7 +301,7 @@ export const schema = new GraphQLSchema({
         type: new GraphQLNonNull(ColumnType),
         args: {
           token: { type: new GraphQLNonNull(GraphQLString) },
-          input: { type: new GraphQLNonNull(CreateColumnInput) },
+          input: { type: new GraphQLNonNull(CreateColumnInput) }
         },
         resolve: async (root, args, context) => {
           const username = (await checkAuth(context.request)).username

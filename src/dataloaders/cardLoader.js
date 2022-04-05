@@ -1,6 +1,5 @@
 import DataLoader from 'dataloader'
 import { Card } from '../models/card.js'
-import { Comment } from '../models/comment.js'
 
 export function getCardLoader (source) {
   let loader

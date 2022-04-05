@@ -1,7 +1,7 @@
 import { Model } from 'objection'
-import { Column } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/column.js'
-import { User } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/user.js'
-import { Comment } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/models/comment.js'
+import { Column } from './column.js'
+import { User } from './user.js'
+import { Comment } from './comment.js'
 
 export class Card extends Model {
   static get tableName () {
