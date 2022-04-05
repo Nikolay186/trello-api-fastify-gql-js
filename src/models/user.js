@@ -12,7 +12,7 @@ export class User extends Model {
 
   async $beforeInsert () {
     this.password = await bcrypt.hash(this.password, 10)
-    this.token = getToken(this.username)
+    // this.token = getToken(this.username)
   }
 
   static get relationMappings () {

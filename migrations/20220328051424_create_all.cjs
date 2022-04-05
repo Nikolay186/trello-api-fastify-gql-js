@@ -5,7 +5,6 @@ exports.up = function(knex) {
         table.string('username').notNullable().unique({indexName: 'user_unique_uname'});
         table.string('email').unique({indexName: 'user_unique_email'});
         table.string('password').notNullable();
-        table.string('token').notNullable();
     })
     .createTable('columns', function(table) {
         table.increments('id');

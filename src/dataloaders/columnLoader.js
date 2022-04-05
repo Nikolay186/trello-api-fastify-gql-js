@@ -1,6 +1,5 @@
 import DataLoader from 'dataloader'
 import { Column } from '../models/column.js'
-import { Card } from '../models/card.js'
 
 export function getColumnLoader (source) {
   const type = source.constructor.name
@@ -8,7 +7,9 @@ export function getColumnLoader (source) {
   switch (type) {
     case 'User':
       loader = new DataLoader((ids) => {
+        console.log(ids)
         const res = ids.map((userId) => {
+          console.log(userId)
           return Column.query().where('columns.ownerId', userId).execute()
         })
         return Promise.resolve(res)
@@ -17,7 +18,7 @@ export function getColumnLoader (source) {
     case 'Card':
       loader = new DataLoader((ids) => {
         const res = ids.map((columnId) => {
-          return Card.query().where('cards.columnId', columnId).execute()
+          return Column.query().where('columns.id', columnId).first().execute()
         })
         return Promise.resolve(res)
       })

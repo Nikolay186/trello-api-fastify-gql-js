@@ -25,7 +25,7 @@ export function getCardLoader (source) {
     case 'Comment':
       loader = new DataLoader((ids) => {
         const res = ids.map((cardId) => {
-          return Comment.query().where('comments.cardId', cardId).execute()
+          return Card.query().where('cards.id', cardId).first().execute()
         })
         return Promise.resolve(res)
       })

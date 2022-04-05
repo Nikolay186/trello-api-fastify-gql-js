@@ -1,7 +1,5 @@
 import DataLoader from 'dataloader'
-import { Card } from '../models/card.js'
-import { Column } from '../models/column.js'
-import { Comment } from '../models/comment.js'
+import { User } from '../models/user.js'
 
 export function getUserLoader (source) {
   let loader
@@ -10,7 +8,7 @@ export function getUserLoader (source) {
     case 'Column':
       loader = new DataLoader((ids) => {
         const res = ids.map((userId) => {
-          return Column.query().where('columns.ownerId', userId).execute()
+          return User.query().where('users.id', userId).first().execute()
         })
         return Promise.resolve(res)
       })
@@ -18,7 +16,7 @@ export function getUserLoader (source) {
     case 'Card':
       loader = new DataLoader((ids) => {
         const res = ids.map((userId) => {
-          return Card.query().where('cards.ownerId', userId).execute()
+          return User.query().where('users.id', userId).first().execute()
         })
         return Promise.resolve(res)
       })
@@ -26,7 +24,7 @@ export function getUserLoader (source) {
     case 'Comment':
       loader = new DataLoader((ids) => {
         const res = ids.map((userId) => {
-          return Comment.query().where('comments.ownerId', userId).execute()
+          return User.query().where('users.id', userId).first().execute()
         })
         return Promise.resolve(res)
       })

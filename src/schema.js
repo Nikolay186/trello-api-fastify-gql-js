@@ -14,9 +14,14 @@ import { UserFilter } from './filters/user.js'
 import { ColumnFilter } from './filters/column.js'
 import { CardFilter } from './filters/card.js'
 import { CommentFilter } from './filters/comment.js'
+import jwt from 'jsonwebtoken'
 
-async function checkOwnership (entity, user) {
+async function checkOwnership(entity, user) {
   if (entity.ownerId === user.id) { return true } else { return false }
+}
+
+async function checkAuth(request) {
+  return jwt.verify(request.headers.authorization, '123')
 }
 
 export const schema = new GraphQLSchema({
@@ -24,14 +29,38 @@ export const schema = new GraphQLSchema({
     name: 'Query',
     fields: {
       // Users
+      login: {
+        type: UserType,
+        args: {
+          username: { type: new GraphQLNonNull(GraphQLString) },
+          password: { type: new GraphQLNonNull(GraphQLString) },
+        },
+        resolve: async (source, args, context) => {
+          const user = await User.query().where('users.username', args.username).first().execute()
+          if (user === undefined && user === null) {
+            return new GenericError('User does not exist', 'NOT_FOUND')
+          }
+          if (bcrypt.compare(args.password, user.password)) {
+            delete user.password
+            user.token = jwt.sign({ username: user.username }, '123')
+            return user
+          } else {
+            return new GenericError('Wrong password', 'UNAUTHORIZED')
+          }
+        },
+      },
       searchUsers: {
         type: new GraphQLList(new GraphQLNonNull(UserType)),
         args: {
           filters: { type: UserFilter }
         },
         resolve: async (source, args, context) => {
+          await checkAuth(context.request)
           const conditions = args.filters
           const applyFilters = conditions !== undefined
+          if (!applyFilters) {
+            return User.query().execute()
+          }
           const searchById = conditions.id !== undefined
           const searchByIds = conditions.ids !== undefined
           const searchByUsername = conditions.username !== undefined
@@ -40,9 +69,7 @@ export const schema = new GraphQLSchema({
           const searchByPartialEmail = conditions.partEmail !== undefined
           let result = []
           let user
-          if (!applyFilters) {
-            return User.query().execute()
-          }
+          
           if (searchById) {
             user = await User.query().findById(conditions.id).first().execute()
             result.push(user)
@@ -78,6 +105,7 @@ export const schema = new GraphQLSchema({
           filters: { type: ColumnFilter }
         },
         resolve: async (source, args, context) => {
+          await checkAuth(context.request)
           const conditions = args.filters
           const applyFilters = conditions !== undefined
           const searchById = conditions.id !== undefined
@@ -120,6 +148,7 @@ export const schema = new GraphQLSchema({
           filters: { type: CardFilter }
         },
         resolve: async (source, args, context) => {
+          await checkAuth(context.request)
           const conditions = args.filters
           const applyFilters = conditions !== undefined
           const searchById = conditions.id !== undefined
@@ -167,6 +196,7 @@ export const schema = new GraphQLSchema({
           filters: { type: CommentFilter }
         },
         resolve: async (source, args, context) => {
+          await checkAuth(context.request)
           const conditions = args.filters
           const applyFilters = conditions !== undefined
           const searchById = conditions.id !== undefined
@@ -230,7 +260,9 @@ export const schema = new GraphQLSchema({
             username,
             password: args.input.password
           }
-          return User.query().insert({...user}).returning('*').execute()
+          user = await User.query().insert({...user}).returning('*').execute()
+          delete user.password
+          return user
         }
 
       },
@@ -241,10 +273,12 @@ export const schema = new GraphQLSchema({
           input: { type: new GraphQLNonNull(UpdateUserInput) }
         },
         resolve: async (root, args, context) => {
-          if (!await bcrypt.compare(args.pwd, context.user.password)) {
+          const username = (await checkAuth(context.request)).username
+          const user = await User.query().where('users.username', username).first().execute()
+          if (!await bcrypt.compare(args.pwd, user.password)) {
             throw new GenericError('Wrong password', 'FORBIDDEN')
           }
-          return User.query().patch(args.input).where('users.username', context.user.username).returning('*').first().execute()
+          return User.query().patch(args.input).where('users.username', user.username).returning('*').first().execute()
         }
       },
       deleteUser: {
@@ -253,8 +287,8 @@ export const schema = new GraphQLSchema({
           pwd: { type: new GraphQLNonNull(GraphQLString) }
         },
         resolve: async (root, args, context) => {
-          const user = context.user
-
+          const username = (await checkAuth(context.request)).username
+          const user = await User.query().where('users.username', username).first().execute()
           if (!await bcrypt.compare(args.pwd, user.password)) {
             throw new GenericError('Wrong password', 'FORBIDDEN')
           }
@@ -266,11 +300,12 @@ export const schema = new GraphQLSchema({
       createColumn: {
         type: new GraphQLNonNull(ColumnType),
         args: {
-          input: { type: new GraphQLNonNull(CreateColumnInput) }
+          token: { type: new GraphQLNonNull(GraphQLString) },
+          input: { type: new GraphQLNonNull(CreateColumnInput) },
         },
         resolve: async (root, args, context) => {
-          const user = context.user
-
+          const username = (await checkAuth(context.request)).username
+          const user = await User.query().where('users.username', username).first().execute()
           args.input.ownerId = user.id
           return Column.query().insert(args.input).returning('*').execute()
         }
@@ -282,9 +317,11 @@ export const schema = new GraphQLSchema({
           input: { type: new GraphQLNonNull(UpdateColumnInput) }
         },
         resolve: async (root, args, context) => {
-          const user = context.user
+          const username = (await checkAuth(context.request)).username
+          const user = await User.query().where('users.username', username).first().execute()
 
-          if (await checkOwnership(await Column.query().where('columns.ownerId', user.id).where('columns.id', args.id).execute(), user)) {
+          const column = await Column.query().where('columns.ownerId', user.id).where('columns.id', args.id).first().execute()
+          if (await checkOwnership(column, user)) {
             return Column.query().patch(args.input).where('columns.id', args.id).returning('*').first().execute()
           } else {
             throw new GenericError('Cannot update column. You are not the owner', 'UNAUTHORIZED')
@@ -298,8 +335,8 @@ export const schema = new GraphQLSchema({
         },
         resolve: async (root, args, context) => {
           const user = context.user
-
-          if (await Column.query().where('columns.ownerId', user.id).where('columns.id', args.id).execute()) {
+          const column = await Column.query().where('columns.ownerId', user.id).where('columns.id', args.id).first().execute()
+          if (column) {
             return Column.query().delete().where('columns.id', args.id).returning('*').execute()
           } else {
             throw new GenericError('Cannot delete column. You are not the owner', 'UNAUTHORIZED')
@@ -313,7 +350,8 @@ export const schema = new GraphQLSchema({
           input: { type: new GraphQLNonNull(CreateCardInput) }
         },
         resolve: async (root, args, context) => {
-          const user = context.user
+          const username = (await checkAuth(context.request)).username
+          const user = await User.query().where('users.username', username).first().execute()
 
           args.input.ownerId = user.id
           return Card.query().insert(args.input).returning('*').execute()
@@ -326,9 +364,11 @@ export const schema = new GraphQLSchema({
           input: { type: new GraphQLNonNull(UpdateCardInput) }
         },
         resolve: async (root, args, context) => {
-          const user = context.user
+          const username = (await checkAuth(context.request)).username
+          const user = await User.query().where('users.username', username).first().execute()
 
-          if (checkOwnership(await Card.query().where('cards.id', args.id).where('cards.ownerId', user.id).execute())) {
+          const card = await Card.query().where('cards.id', args.id).where('cards.ownerId', user.id).first().execute()
+          if (checkOwnership(card, user)) {
             return Card.query().patch(args.input).where('cards.id', args.id).returning('*').first().execute()
           } else {
             throw new GenericError('Cannot update card. You are not the owner', 'UNAUTHORIZED')
@@ -341,9 +381,11 @@ export const schema = new GraphQLSchema({
           id: { type: new GraphQLNonNull(GraphQLInt) }
         },
         resolve: async (root, args, context) => {
-          const user = context.user
+          const username = (await checkAuth(context.request)).username
+          const user = await User.query().where('users.username', username).first().execute()
 
-          if (checkOwnership(await Card.query().where('cards.id', args.id).where('cards.ownerId', user.id).execute())) {
+          const card = await Card.query().where('cards.id', args.id).where('cards.ownerId', user.id).first().execute()
+          if (checkOwnership(card, user)) {
             return Card.query().delete().where('cards.id', args.id).returning('*').execute()
           } else {
             throw new GenericError('Cannot delete card. You are not the owner', 'UNAUTHORIZED')
@@ -357,7 +399,8 @@ export const schema = new GraphQLSchema({
           input: { type: new GraphQLNonNull(CreateCommentInput) }
         },
         resolve: async (root, args, context) => {
-          const user = context.user
+          const username = (await checkAuth(context.request)).username
+          const user = await User.query().where('users.username', username).first().execute()
 
           args.input.ownerId = user.id
           return Comment.query().insert(args.input).returning('*').execute()
@@ -370,9 +413,11 @@ export const schema = new GraphQLSchema({
           input: { type: new GraphQLNonNull(UpdateCommentInput) }
         },
         resolve: async (root, args, context) => {
-          const user = context.user
+          const username = (await checkAuth(context.request)).username
+          const user = await User.query().where('users.username', username).first().execute()
 
-          if (checkOwnership(Comment.query().where('comments.id', args.id).where('comments.ownerId', user.id).execute())) {
+          const comment = await Comment.query().where('comments.id', args.id).where('comments.ownerId', user.id).first().execute()
+          if (checkOwnership(comment, user)) {
             return Comment.query().patch(args.input).where('comments.id', args.id).returning('*').first().execute()
           } else {
             throw new GenericError('Cannot update comment. You are not the owner', 'UNAUTHORIZED')
@@ -385,9 +430,11 @@ export const schema = new GraphQLSchema({
           id: { type: new GraphQLNonNull(GraphQLInt) }
         },
         resolve: async (root, args, context) => {
-          const user = context.user
+          const username = (await checkAuth(context.request)).username
+          const user = await User.query().where('users.username', username).first().execute()
 
-          if (checkOwnership(Comment.query().where('comments.id', args.id).where('comments.ownerId', user.id).execute())) {
+          const comment = await Comment.query().where('comments.id', args.id).where('comments.ownerId', user.id).first().execute()
+          if (checkOwnership(comment, user)) {
             return Comment.query().delete().where('comments.id', args.id).returning('*').execute()
           } else {
             throw new GenericError('Cannot delete comment. You are not the owner', 'UNAUTHORIZED')

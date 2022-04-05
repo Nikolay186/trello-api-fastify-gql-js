@@ -12,7 +12,7 @@ export async function findUser (token) {
   const user = await User.query().where('users.token', token).first().execute()
   return user
 }
-
+ 
 export function verify (token) {
   return jwt.verify(token, jwtKey)
 }

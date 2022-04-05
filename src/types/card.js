@@ -17,7 +17,7 @@ export const CardType = new GraphQLObjectType({
       type: new GraphQLNonNull(UserType),
       resolve: async (source) => {
         const loader = getUserLoader(source)
-        return loader.load(source.id)
+        return loader.load(source.ownerId)
         // return userLoader.load(source)
         // return await User.query().where('users.id', source.ownerId).first().execute()
       }
@@ -26,7 +26,7 @@ export const CardType = new GraphQLObjectType({
       type: new GraphQLNonNull(ColumnType),
       resolve: async (source) => {
         const loader = getColumnLoader(source)
-        return loader.load(source.id)
+        return loader.load(source.columnId)
         // return columnLoader.load(source)
         // return await Column.query().where('columns.id', source.columnId).first().execute()
       }

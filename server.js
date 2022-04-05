@@ -2,12 +2,13 @@ import { schema } from '/Users/Nikolaj/projects/trello-api-objectionjs/src/schem
 import setup from './src/db/connection.cjs'
 import Fastify from 'fastify'
 import mercurius from 'mercurius'
-import { findUser } from './src/auth/jwt.js'
 import graphql from 'graphql'
+import jwt from 'jsonwebtoken'
+import { User } from './src/models/user.js'
 
 setup
 const app = Fastify({
-  logger: true
+  // logger: true
 })
 
 app.register(mercurius, {
@@ -16,14 +17,7 @@ app.register(mercurius, {
   queryDepth: 6,
   validationRules: [graphql.NoSchemaIntrospectionCustomRule],
   context: async (request, reply) => {
-    const user = await findUser(request.headers.authorization)
-    if (user === undefined) {
-      reply.status(404).send({
-        message: 'User not found',
-        type: 'NOT_FOUND',
-        data: { }
-      })
-    } else { return {user: user} }
+    return { request: request }
   }
 })
 

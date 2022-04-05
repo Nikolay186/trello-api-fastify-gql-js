@@ -23,7 +23,8 @@ export const ColumnType = new GraphQLObjectType({
       type: new GraphQLNonNull(UserType),
       resolve: async (source) => {
         const loader = getUserLoader(source)
-        return loader.load(source.id)
+        const user = await loader.load(source.ownerId)
+        return loader.load(source.ownerId)
         // return userLoader.load(source)
         // return await User.query().where('users.id', source.ownerId).first().execute()
       }

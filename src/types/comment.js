@@ -15,7 +15,7 @@ export const CommentType = new GraphQLObjectType({
       type: new GraphQLNonNull(UserType),
       resolve: async (source) => {
         const loader = getUserLoader(source)
-        return loader.load(source.id)
+        return loader.load(source.ownerId)
         // return userLoader.load(source)
         // return await User.query().where('users.id', source.ownerId).execute()
       }
@@ -24,7 +24,7 @@ export const CommentType = new GraphQLObjectType({
       type: new GraphQLNonNull(CardType),
       resolve: async (source) => {
         const loader = getCardLoader(source)
-        return loader.load(source.id)
+        return loader.load(source.cardId)
         // return cardLoader.load(source)
         // return await Card.query().where('cards.id', source.cardId).execute()
       }
